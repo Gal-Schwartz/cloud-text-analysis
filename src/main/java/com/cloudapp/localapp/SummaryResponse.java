@@ -1,4 +1,4 @@
-package cloud.assignment.local.dto;
+package com.cloudapp.localapp;
 
 public class SummaryResponse {
 

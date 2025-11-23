@@ -1,6 +1,4 @@
-package cloud.assignment.manager;
-
-import cloud.assignment.manager.dto.WorkerResultMessage;
+package com.cloudapp.manager;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

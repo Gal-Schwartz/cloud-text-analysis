@@ -1,9 +1,9 @@
+package com.cloudapp.manager;
 
-import cloud.assignment.local.LocalAppConfig;
-import cloud.assignment.local.dto.SummaryResponse;
-import cloud.assignment.local.dto.TaskRequest;
-import cloud.assignment.manager.dto.WorkerResultMessage;
-import cloud.assignment.manager.dto.WorkerTaskMessage;
+import com.cloudapp.localapp.LocalAppConfig;
+import com.cloudapp.localapp.SummaryResponse;
+import com.cloudapp.localapp.TaskRequest;
+import com.cloudapp.worker.WorkerConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -209,7 +209,7 @@ public class ManagerApplication {
             String body = objectMapper.writeValueAsString(workerTask);
 
             SendMessageRequest sendReq = SendMessageRequest.builder()
-                    .queueUrl(LocalAppConfig.WORKER_TASK_QUEUE_URL)
+                    .queueUrl(WorkerConfig.WORKER_TASK_QUEUE_URL)
                     .messageBody(body)
                     .build();
 
@@ -217,7 +217,7 @@ public class ManagerApplication {
         }
 
         logger.info("Task {}: sent {} worker tasks to queue {}", taskId, inputLines.size(),
-                LocalAppConfig.WORKER_TASK_QUEUE_URL);
+                WorkerConfig.WORKER_TASK_QUEUE_URL);
 
         // 4. לוודא שיש מספיק Workers חיים
         ensureEnoughWorkers(inputLines.size(), request.getN());
@@ -273,8 +273,8 @@ public class ManagerApplication {
         DescribeInstancesRequest describeReq = DescribeInstancesRequest.builder()
                 .filters(
                         Filter.builder()
-                                .name("tag:" + LocalAppConfig.WORKER_TAG_KEY_ROLE)
-                                .values(LocalAppConfig.WORKER_TAG_VALUE_WORKER)
+                                .name("tag:" +  WorkerConfig.WORKER_TAG_KEY_ROLE)
+                                .values(WorkerConfig.WORKER_TAG_VALUE_WORKER)
                                 .build(),
                         Filter.builder()
                                 .name("instance-state-name")
@@ -331,25 +331,25 @@ public class ManagerApplication {
         String userDataBase64 = Base64.getEncoder().encodeToString(userDataScript.getBytes(StandardCharsets.UTF_8));
 
         RunInstancesRequest runReq = RunInstancesRequest.builder()
-                .imageId(LocalAppConfig.WORKER_AMI_ID)
-                .instanceType(InstanceType.fromValue(LocalAppConfig.WORKER_INSTANCE_TYPE))
+                .imageId(WorkerConfig.WORKER_AMI_ID)
+                .instanceType(InstanceType.fromValue(WorkerConfig.WORKER_INSTANCE_TYPE))
                 .minCount(count)
                 .maxCount(count)
-                .securityGroupIds(LocalAppConfig.WORKER_SECURITY_GROUP_ID)
-                .keyName(LocalAppConfig.WORKER_KEY_NAME)
+                .securityGroupIds(WorkerConfig.WORKER_SECURITY_GROUP_ID)
+                .keyName(WorkerConfig.WORKER_KEY_NAME)
                 .iamInstanceProfile(IamInstanceProfileSpecification.builder()
-                        .arn(LocalAppConfig.WORKER_IAM_INSTANCE_PROFILE_ARN)
+                        .arn(WorkerConfig.WORKER_IAM_INSTANCE_PROFILE_ARN)
                         .build())
                 .userData(userDataBase64)
                 .tagSpecifications(
                         TagSpecification.builder()
                                 .resourceType(ResourceType.INSTANCE)
                                 .tags(
-                                        Tag.builder()
-                                                .key(LocalAppConfig.WORKER_TAG_KEY_ROLE)
-                                                .value(LocalAppConfig.WORKER_TAG_VALUE_WORKER)
+                                        software.amazon.awssdk.services.ec2.model.Tag.builder()
+                                                .key(WorkerConfig.WORKER_TAG_KEY_ROLE)
+                                                .value(WorkerConfig.WORKER_TAG_VALUE_WORKER)
                                                 .build(),
-                                        Tag.builder()
+                                        software.amazon.awssdk.services.ec2.model.Tag.builder()
                                                 .key("Name")
                                                 .value("WorkerInstance")
                                                 .build()
@@ -377,7 +377,7 @@ public class ManagerApplication {
         while (true) {
             try {
                 ReceiveMessageRequest recvReq = ReceiveMessageRequest.builder()
-                        .queueUrl(LocalAppConfig.WORKER_RESULT_QUEUE_URL)
+                        .queueUrl(WorkerConfig.WORKER_RESULT_QUEUE_URL)
                         .maxNumberOfMessages(10)
                         .waitTimeSeconds(20)
                         .visibilityTimeout(60)
@@ -402,12 +402,12 @@ public class ManagerApplication {
                         result = objectMapper.readValue(body, WorkerResultMessage.class);
                     } catch (Exception e) {
                         logger.error("Failed to parse WorkerResultMessage: {}", body, e);
-                        deleteMessage(LocalAppConfig.WORKER_RESULT_QUEUE_URL, msg);
+                        deleteMessage(WorkerConfig.WORKER_RESULT_QUEUE_URL, msg);
                         continue;
                     }
 
                     handleWorkerResult(result);
-                    deleteMessage(LocalAppConfig.WORKER_RESULT_QUEUE_URL, msg);
+                    deleteMessage(WorkerConfig.WORKER_RESULT_QUEUE_URL, msg);
                 }
 
             } catch (Exception e) {
@@ -498,8 +498,8 @@ public class ManagerApplication {
         DescribeInstancesRequest describeReq = DescribeInstancesRequest.builder()
                 .filters(
                         Filter.builder()
-                                .name("tag:" + LocalAppConfig.WORKER_TAG_KEY_ROLE)
-                                .values(LocalAppConfig.WORKER_TAG_VALUE_WORKER)
+                                .name("tag:" + WorkerConfig.WORKER_TAG_KEY_ROLE)
+                                .values(WorkerConfig.WORKER_TAG_VALUE_WORKER)
                                 .build(),
                         Filter.builder()
                                 .name("instance-state-name")

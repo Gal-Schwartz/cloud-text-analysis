@@ -1,4 +1,4 @@
-package com.example;
+package com.cloudapp.worker;
 
 import java.io.*;
 import java.net.URL;
@@ -40,9 +40,9 @@ public class ParserRunner {
                 int mode = 0;
                 switch(modeStr)
                 {
-                    case "POS" : mode = 1;
-                    case "CONSTITUENCY" : mode = 2;
-                    case "DEPENDENCY": mode = 3;
+                    case "POS" : mode = 1; break;
+                    case "CONSTITUENCY" : mode = 2; break;
+                    case "DEPENDENCY": mode = 3; break;
                 }
                 System.out.println("Processing: " + mode + " | " + url);
 

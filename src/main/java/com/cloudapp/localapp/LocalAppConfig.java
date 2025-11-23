@@ -1,3 +1,4 @@
+package com.cloudapp.localapp;
 
 import software.amazon.awssdk.regions.Region;
 

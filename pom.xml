@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
 
-    <groupId>cloud.assignment</groupId>
-    <artifactId>local-app</artifactId>
+    <groupId>com.cloudapp</groupId>
+    <artifactId>cloud-text-analysis</artifactId>
     <version>1.0-SNAPSHOT</version>
 
 
@@ -78,7 +78,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>cloud.assignment.local.LocalApplication</mainClass>
+                            <mainClass>com.cloudapp.localapp.LocalApplication</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

@@ -1,4 +1,4 @@
-package com.example;
+package com.cloudapp.worker;
 
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.parser.lexparser.LexicalizedParser;

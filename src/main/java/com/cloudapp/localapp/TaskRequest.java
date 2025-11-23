@@ -1,4 +1,4 @@
-
+package com.cloudapp.localapp;  
 public class TaskRequest {
 
     private String taskId;

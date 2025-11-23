@@ -1,5 +1,5 @@
-import SummaryResponse;
-import TaskRequest;
+package com.cloudapp.localapp;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -190,11 +190,11 @@ public class LocalApplication {
                         TagSpecification.builder()
                                 .resourceType(ResourceType.INSTANCE)
                                 .tags(
-                                        Tag.builder()
+                                        software.amazon.awssdk.services.ec2.model.Tag.builder()
                                                 .key(LocalAppConfig.MANAGER_TAG_KEY_ROLE)
                                                 .value(LocalAppConfig.MANAGER_TAG_VALUE_MANAGER)
                                                 .build(),
-                                        Tag.builder()
+                                        software.amazon.awssdk.services.ec2.model.Tag.builder()
                                                 .key("Name")
                                                 .value("ManagerInstance")
                                                 .build()

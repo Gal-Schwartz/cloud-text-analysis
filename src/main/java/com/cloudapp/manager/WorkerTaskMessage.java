@@ -1,4 +1,4 @@
-package cloud.assignment.manager.dto;
+package com.cloudapp.manager;
 
 public class WorkerTaskMessage {
 
