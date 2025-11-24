@@ -1,0 +1,5 @@
+com\cloudapp\manager\ManagerApplication$InputLine.class
+com\cloudapp\manager\TaskState.class
+com\cloudapp\manager\ManagerConfig.class
+com\cloudapp\manager\ManagerApplication.class
+com\cloudapp\manager\HtmlSummaryBuilder.class

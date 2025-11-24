@@ -1,0 +1,4 @@
+com\cloudapp\common\TaskRequest.class
+com\cloudapp\common\SummaryResponse.class
+com\cloudapp\common\WorkerResultMessage.class
+com\cloudapp\common\WorkerTaskMessage.class
