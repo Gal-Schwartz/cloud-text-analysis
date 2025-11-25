@@ -55,6 +55,7 @@
     </dependencies>
 
     <build>
+        <finalName>localapp</finalName>
         <plugins>
             <!-- fat jar -->
             <plugin>

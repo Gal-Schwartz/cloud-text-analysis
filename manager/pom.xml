@@ -55,6 +55,7 @@
     </dependencies>
 
     <build>
+        <finalName>manager</finalName>
         <plugins>
             <!-- fat jar -->
             <plugin>

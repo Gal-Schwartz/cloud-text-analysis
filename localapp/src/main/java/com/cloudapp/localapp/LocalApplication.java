@@ -32,6 +32,7 @@ public class LocalApplication {
     private final SqsClient sqs;
     private final Ec2Client ec2;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private String responseQueueUrl;   
 
     public LocalApplication(Region region) {
         this.s3 = S3Client.builder()
@@ -127,25 +128,29 @@ public class LocalApplication {
         logger.info("Saved summary to local file: {}", outputFilePath);
     }
 
-    // ---------- NEW: ENSURE LOCAL RESPONSE QUEUE EXISTS ----------
+    // ----------  ENSURE LOCAL RESPONSE QUEUE EXISTS ----------
 
-    /**
-     * Creates (or verifies) the local response queue for the Local app, and returns its URL.
-     */
     private String ensureLocalResponseQueue() {
-        String queueName = LocalAppConfig.LOCAL_RESPONSE_QUEUE_NAME;
+        
+        if (responseQueueUrl != null) {
+            return responseQueueUrl;
+        }
+
+        String queueName = "local-responses-" + UUID.randomUUID();
 
         CreateQueueRequest createReq = CreateQueueRequest.builder()
                 .queueName(queueName)
                 .build();
 
         CreateQueueResponse createRes = sqs.createQueue(createReq);
-        String queueUrl = createRes.queueUrl();
-        logger.info("Local response queue ready. name={}, url={}", queueName, queueUrl);
-        return queueUrl;
+
+        responseQueueUrl = createRes.queueUrl();
+        logger.info("Local response queue created. name={}, url={}", queueName, responseQueueUrl);
+
+        return responseQueueUrl;
     }
 
-    // ---------- STEP 1: ENSURE MANAGER RUNNING ----------
+    // ----------  ENSURE MANAGER RUNNING ----------
 
     private String ensureManagerRunning() {
         DescribeInstancesRequest describeReq = DescribeInstancesRequest.builder()
@@ -211,11 +216,14 @@ public class LocalApplication {
 
     private String buildManagerUserDataScript() {
         return "#!/bin/bash\n" +
-                "cd /home/ubuntu/app\n" +
-                "java -jar manager.jar > manager.log 2>&1 &\n";
+                "sudo su ubuntu << 'EOF'\n" +
+                "cd /home/ubuntu/app/manager\n" +
+                "chmod 755 manager.jar\n" +
+                "nohup java -jar manager.jar > /home/ubuntu/app/manager/manager.log 2>&1 &\n" +
+                "EOF\n";
     }
 
-    // ---------- STEP 2: UPLOAD INPUT FILE TO S3 ----------
+    // ---------- UPLOAD INPUT FILE TO S3 ----------
 
     private String uploadInputFile(String taskId, String inputFilePath) {
         File file = new File(inputFilePath);
@@ -235,7 +243,7 @@ public class LocalApplication {
         return key;
     }
 
-    // ---------- STEP 3: SEND TASK REQUEST TO MANAGER ----------
+    // ----------  SEND TASK REQUEST TO MANAGER ----------
 
     private void sendTaskRequest(String taskId,
                                  String inputS3Key,
@@ -261,7 +269,7 @@ public class LocalApplication {
         sqs.sendMessage(sendReq);
     }
 
-    // ---------- STEP 4: WAIT FOR SUMMARY RESPONSE FROM PERSONAL QUEUE ----------
+    // ----------  WAIT FOR SUMMARY RESPONSE FROM PERSONAL QUEUE ----------
 
     private SummaryResponse waitForSummary(String taskId, String responseQueueUrl) throws IOException {
         long deadline = System.currentTimeMillis() + LocalAppConfig.RESPONSE_WAIT_TIMEOUT_MS;
@@ -313,7 +321,7 @@ public class LocalApplication {
         sqs.deleteMessage(delReq);
     }
 
-    // ---------- STEP 5: DOWNLOAD SUMMARY FROM S3 ----------
+    // ----------  DOWNLOAD SUMMARY FROM S3 ----------
 
     private void downloadSummaryToLocal(String summaryKey, String outputFilePath) throws IOException {
         GetObjectRequest getReq = GetObjectRequest.builder()

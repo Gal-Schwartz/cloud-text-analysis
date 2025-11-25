@@ -359,10 +359,12 @@ public class ManagerApplication {
     }
 
     private String buildWorkerUserDataScript() {
-        // Must match the location of the Worker jar in the AMI
         return "#!/bin/bash\n" +
-                "cd /home/ubuntu/app\n" +
-                "java -jar worker.jar > worker.log 2>&1 &\n";
+                "sudo su ubuntu << 'EOF'\n" +
+                "cd /home/ubuntu/app/worker\n" +
+                "chmod 755 worker.jar\n" +
+                "nohup java -jar worker.jar > /home/ubuntu/app/worker/worker.log 2>&1 &\n" +
+                "EOF\n";
     }
 
     // ==================== POLLING FROM WORKERS (RESULTS) ====================

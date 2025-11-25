@@ -57,6 +57,7 @@
     </dependencies>
 
     <build>
+        <finalName>worker</finalName>
         <plugins>
             <!-- fat jar -->
             <plugin>
