@@ -1,4 +1,0 @@
-com\cloudapp\worker\ParserRunner.class
-com\cloudapp\worker\WorkerApplication.class
-com\cloudapp\worker\StanfordParser.class
-com\cloudapp\worker\WorkerConfig.class
