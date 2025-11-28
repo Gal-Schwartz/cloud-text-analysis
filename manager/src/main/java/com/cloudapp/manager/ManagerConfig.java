@@ -17,12 +17,12 @@ public class ManagerConfig {
 
     // ---------- WORKER EC2 ----------
     // (These are used by the Manager when launching Workers, the Worker itself does not need them at runtime)
-    public static final String WORKER_AMI_ID = "ami-0abcdef0123456789"; // TODO
-    public static final String WORKER_INSTANCE_TYPE = "t2.micro";
+    public static final String WORKER_AMI_ID = "ami-0c1c02bdf63b28881"; 
+    public static final String WORKER_INSTANCE_TYPE = "t3.medium";
     public static final String WORKER_SECURITY_GROUP_ID = "sg-03d44604c58553b54"; 
     public static final String WORKER_KEY_NAME = "mykey"; 
     public static final String WORKER_IAM_INSTANCE_PROFILE_ARN =
-            "arn:aws:iam::675475782430:role/LabRole"; 
+            "arn:aws:iam::675475782430:instance-profile/LabInstanceProfile"; 
 
     // ---------- WORKER QUEUES ----------
     // Task queue that the Manager sends to Workers

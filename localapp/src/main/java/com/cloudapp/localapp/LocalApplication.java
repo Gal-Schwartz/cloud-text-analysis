@@ -57,6 +57,9 @@ public class LocalApplication {
 
         String inputFilePath = args[0];
         String outputFilePath = args[1];
+        if (!new File(inputFilePath).exists()) {
+            throw new RuntimeException("Input file not found");
+        }
         int n;
         try {
             n = Integer.parseInt(args[2]);
@@ -214,14 +217,19 @@ public class LocalApplication {
         return instanceId;
     }
 
-    private String buildManagerUserDataScript() {
-        return "#!/bin/bash\n" +
-                "sudo su ubuntu << 'EOF'\n" +
-                "cd /home/ubuntu/app/manager\n" +
-                "chmod 755 manager.jar\n" +
-                "nohup java -jar manager.jar > /home/ubuntu/app/manager/manager.log 2>&1 &\n" +
-                "EOF\n";
-    }
+        private String buildManagerUserDataScript() { 
+            return "#!/bin/bash\n" +
+                // Switch to ubuntu user with a full login shell (loads PATH for aws cli)
+                "sudo su - ubuntu << 'EOF'\n" +
+                
+                // Use the path confirmed by your 'ls' command
+                "cd /home/ubuntu/app/manager\n" + 
+                
+                // Download and Run
+                "aws s3 cp s3://cloud-text-artifacts/manager.jar manager.jar\n" +
+                "nohup java -jar manager.jar > manager.log 2>&1 &\n" +
+                "EOF\n"; 
+        }   
 
     // ---------- UPLOAD INPUT FILE TO S3 ----------
 

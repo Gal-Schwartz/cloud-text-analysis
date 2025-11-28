@@ -258,49 +258,71 @@ public class ManagerApplication {
     // ==================== WORKERS MANAGEMENT ====================
 
     private void ensureEnoughWorkers(int messagesCount, int n) {
-        // How many Workers are needed for this task (ceil(messagesCount / n))
-        int required = (messagesCount + n - 1) / n;
-        logger.info("ensureEnoughWorkers: messagesCount={}, n={}, requiredWorkers={}",
-                messagesCount, n, required);
+    int required = (messagesCount + n - 1) / n;
+    logger.info("ensureEnoughWorkers: messagesCount={}, n={}, requiredWorkers={}",
+            messagesCount, n, required);
 
-        // Count how many Workers are active (tag: Role=Worker, state in {pending, running})
-        DescribeInstancesRequest describeReq = DescribeInstancesRequest.builder()
-                .filters(
-                        Filter.builder()
-                                .name("tag:" +  ManagerConfig.WORKER_TAG_KEY_ROLE)
-                                .values(ManagerConfig.WORKER_TAG_VALUE_WORKER)
-                                .build(),
-                        Filter.builder()
-                                .name("instance-state-name")
-                                .values("pending", "running")
-                                .build()
-                )
-                .build();
+    // 1. Find active workers
+    DescribeInstancesRequest describeReq = DescribeInstancesRequest.builder()
+            .filters(
+                    Filter.builder()
+                            .name("tag:" + ManagerConfig.WORKER_TAG_KEY_ROLE)
+                            .values(ManagerConfig.WORKER_TAG_VALUE_WORKER)
+                            .build(),
+                    Filter.builder()
+                            .name("instance-state-name")
+                            .values("pending", "running")
+                            .build()
+            )
+            .build();
 
-        DescribeInstancesResponse describeRes = ec2.describeInstances(describeReq);
-        int active = 0;
-        for (Reservation res : describeRes.reservations()) {
-            active += res.instances().size();
+    DescribeInstancesResponse describeRes = ec2.describeInstances(describeReq);
+
+    List<String> activeWorkerIds = new ArrayList<>();
+    for (Reservation res : describeRes.reservations()) {
+        for (Instance inst : res.instances()) {
+            activeWorkerIds.add(inst.instanceId());
         }
+    }
 
-        int toLaunch = Math.max(0, required - active);
+    int active = activeWorkerIds.size();
+    logger.info("Active workers: {}", active);
 
-        // Do not exceed the total limit of 19 instances (as per the instructions)
-        int maxTotal = 19;
-        int currentTotal = countAllInstances();
-        int maxAdditional = Math.max(0, maxTotal - currentTotal);
+    // ---------- SCALE UP ----------
+    int toLaunch = Math.max(0, required - active);
 
-        toLaunch = Math.min(toLaunch, maxAdditional);
+    // Respect max total instance limit
+    int maxTotal = 19;
+    int currentTotal = countAllInstances();
+    int maxAdditional = Math.max(0, maxTotal - currentTotal);
+    toLaunch = Math.min(toLaunch, maxAdditional);
 
-        if (toLaunch <= 0) {
-            logger.info("No need to launch new workers. active={}, required={}, currentTotal={}",
-                    active, required, currentTotal);
-            return;
-        }
-
+    if (toLaunch > 0) {
         logger.info("Launching {} new worker instances", toLaunch);
         launchWorkers(toLaunch);
     }
+
+    // ---------- SCALE DOWN ----------
+    if (active > required) {
+        int toTerminate = active - required;
+        logger.info("Too many workers: active={}, required={}. Terminating {} workers.",
+                active, required, toTerminate);
+
+        // terminate the NEWEST workers first (optional: but often better)
+        // reverse order:
+        Collections.reverse(activeWorkerIds);
+
+        List<String> terminateList = activeWorkerIds.subList(0, toTerminate);
+
+        TerminateInstancesRequest termReq = TerminateInstancesRequest.builder()
+                .instanceIds(terminateList)
+                .build();
+        ec2.terminateInstances(termReq);
+
+        logger.info("Requested termination of workers: {}", terminateList);
+    }
+}
+
 
     private int countAllInstances() {
         DescribeInstancesRequest req = DescribeInstancesRequest.builder()
@@ -358,13 +380,13 @@ public class ManagerApplication {
         }
     }
 
-    private String buildWorkerUserDataScript() {
-        return "#!/bin/bash\n" +
-                "sudo su ubuntu << 'EOF'\n" +
-                "cd /home/ubuntu/app/worker\n" +
-                "chmod 755 worker.jar\n" +
-                "nohup java -jar worker.jar > /home/ubuntu/app/worker/worker.log 2>&1 &\n" +
-                "EOF\n";
+   private String buildWorkerUserDataScript() {
+    return "#!/bin/bash\n" +
+           "sudo su - ubuntu << 'EOF'\n" +
+           "cd /home/ubuntu/app/worker\n" +
+           "aws s3 cp s3://cloud-text-artifacts/worker.jar worker.jar\n" +
+           "nohup java -Xmx3000m -jar worker.jar > worker.log 2>&1 &\n" +
+           "EOF\n";
     }
 
     // ==================== POLLING FROM WORKERS (RESULTS) ====================
@@ -457,6 +479,7 @@ public class ManagerApplication {
                 .bucket(ManagerConfig.BUCKET_NAME)
                 .key(summaryKey)
                 .contentType("text/html; charset=UTF-8")
+                .acl(ObjectCannedACL.PUBLIC_READ)   
                 .build();
 
         s3.putObject(putReq, RequestBody.fromString(html, StandardCharsets.UTF_8));

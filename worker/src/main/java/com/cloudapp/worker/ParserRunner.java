@@ -4,10 +4,14 @@ import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ParserRunner {
 
     private final StanfordParser parser;
+    private static final Logger logger = LoggerFactory.getLogger(ParserRunner.class);
+
 
     public ParserRunner() {
         this.parser = new StanfordParser();
@@ -17,7 +21,6 @@ public class ParserRunner {
         int mode = parseMode(modeStr);
 
         System.out.println("Processing: mode=" + modeStr + " | url=" + url);
-
         String text = download(url);
         List<String> sentences = splitIntoSentences(text);
         String baseName = url.substring(url.lastIndexOf('/') + 1);
@@ -31,11 +34,11 @@ public class ParserRunner {
         try (PrintWriter out = new PrintWriter(outFile, StandardCharsets.UTF_8)) {
             int count = 1;
             for (String sentence : sentences) {
-
+                logger.info("RAW SENTENCE = [" + sentence + "]");
                 if (sentence.trim().isEmpty()) continue;
 
                 Object result = parser.parse(sentence, mode);
-                System.out.println("parsed sentence " + count);
+                logger.info("parsed sentence " + count);
 
                 out.println("===== Sentence " + count + " =====");
                 out.println("Text: " + sentence);
@@ -52,7 +55,7 @@ public class ParserRunner {
             }
         }
 
-        System.out.println("Saved output to: " + outFile.getAbsolutePath());
+        logger.info("Saved output to: " + outFile.getAbsolutePath());
         return outFile;
     }
 
@@ -77,9 +80,14 @@ public class ParserRunner {
     }
 
     private List<String> splitIntoSentences(String text) {
-        return Arrays.asList(
-                text.replace("\n", " ")
-                    .split("(?<=[.!?])\\s+")
-        );
+        text = text.replace("\r", "");
+        String[] raw = text.split("\\n+");
+        List<String> out = new ArrayList<>();
+        for (String s : raw) {
+            s = s.trim();
+            if (!s.isEmpty()) out.add(s);
+        }
+        return out;
     }
+
 }

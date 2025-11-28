@@ -11,6 +11,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -153,6 +154,7 @@ public class WorkerApplication {
 
         PutObjectRequest putReq = PutObjectRequest.builder()
                 .bucket(WorkerConfig.BUCKET_NAME)
+                .acl(ObjectCannedACL.PUBLIC_READ)
                 .key(key)
                 .build();
 
