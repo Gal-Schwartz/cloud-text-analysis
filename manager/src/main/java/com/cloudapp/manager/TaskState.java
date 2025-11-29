@@ -15,7 +15,7 @@ public class TaskState {
     private final AtomicInteger completedCount = new AtomicInteger(0);
 
     // per (url + analysisType): WorkerResultMessage
-    private final Map<String, WorkerResultMessage> resultsByUrl = new ConcurrentHashMap<>();
+    private final Map<String, WorkerResultMessage> resultsByKey = new ConcurrentHashMap<>();
 
     public TaskState(String taskId,
                      String responseQueueUrl,
@@ -48,12 +48,12 @@ public class TaskState {
     }
 
     public Map<String, WorkerResultMessage> getResultsByUrl() {
-        return resultsByUrl;
+        return resultsByKey;
     }
 
     public void addResult(WorkerResultMessage result) {
         String key = result.getUrl() + "|" + result.getAnalysisType();
-        resultsByUrl.put(key, result);
+        resultsByKey.put(key, result);
         completedCount.incrementAndGet();
     }
 
