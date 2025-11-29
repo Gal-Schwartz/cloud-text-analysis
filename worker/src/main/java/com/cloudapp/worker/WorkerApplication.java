@@ -66,7 +66,7 @@ public class WorkerApplication {
             try {
                 ReceiveMessageRequest recvReq = ReceiveMessageRequest.builder()
                         .queueUrl(WorkerConfig.WORKER_TASK_QUEUE_URL)
-                        .maxNumberOfMessages(5)
+                        .maxNumberOfMessages(1)
                         .waitTimeSeconds(20)   // long polling
                         .visibilityTimeout(300) // time to process
                         .build();

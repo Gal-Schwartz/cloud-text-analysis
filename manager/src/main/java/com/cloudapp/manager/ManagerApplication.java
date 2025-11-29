@@ -72,6 +72,7 @@ public class ManagerApplication {
     }
 
     public void shutdown() {
+        tryTerminateAllWorkersAndSelf();
         try {
             taskExecutor.shutdown();
         } catch (Exception ignored) {}
@@ -302,25 +303,6 @@ public class ManagerApplication {
         launchWorkers(toLaunch);
     }
 
-    // ---------- SCALE DOWN ----------
-    if (active > required) {
-        int toTerminate = active - required;
-        logger.info("Too many workers: active={}, required={}. Terminating {} workers.",
-                active, required, toTerminate);
-
-        // terminate the NEWEST workers first (optional: but often better)
-        // reverse order:
-        Collections.reverse(activeWorkerIds);
-
-        List<String> terminateList = activeWorkerIds.subList(0, toTerminate);
-
-        TerminateInstancesRequest termReq = TerminateInstancesRequest.builder()
-                .instanceIds(terminateList)
-                .build();
-        ec2.terminateInstances(termReq);
-
-        logger.info("Requested termination of workers: {}", terminateList);
-    }
 }
 
 
@@ -519,7 +501,7 @@ public class ManagerApplication {
                                 .build(),
                         Filter.builder()
                                 .name("instance-state-name")
-                                .values("pending", "running", "stopping", "stopped")
+                                .values("pending", "running")
                                 .build()
                 )
                 .build();

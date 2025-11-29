@@ -83,6 +83,14 @@ public class LocalApplication {
     }
 
     public void close() {
+        if (responseQueueUrl != null) {
+            try {
+                sqs.deleteQueue(b -> b.queueUrl(responseQueueUrl));
+                logger.info("Deleted local response queue: {}", responseQueueUrl);
+            } catch (Exception e) {
+                logger.warn("Failed to delete local response queue {}: {}", responseQueueUrl, e.getMessage());
+            }
+        }
         try {
             s3.close();
         } catch (Exception ignored) {}
