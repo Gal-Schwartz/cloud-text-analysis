@@ -68,7 +68,7 @@ public class WorkerApplication {
                         .queueUrl(WorkerConfig.WORKER_TASK_QUEUE_URL)
                         .maxNumberOfMessages(1)
                         .waitTimeSeconds(20)   // long polling
-                        .visibilityTimeout(300) // time to process
+                        .visibilityTimeout(1200) // time to process (20 minutes)
                         .build();
 
                 ReceiveMessageResponse recvRes = sqs.receiveMessage(recvReq);

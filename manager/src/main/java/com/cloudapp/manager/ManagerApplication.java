@@ -349,7 +349,7 @@ public class ManagerApplication {
            "sudo su - ubuntu << 'EOF'\n" +
            "cd /home/ubuntu/app/worker\n" +
            "aws s3 cp s3://cloud-text-artifacts/worker.jar worker.jar\n" +
-           "nohup java -Xmx2200m -jar worker.jar > worker.log 2>&1 &\n" +
+           "nohup java -jar worker.jar > worker.log 2>&1 &\n" +
            "EOF\n";
     }
 

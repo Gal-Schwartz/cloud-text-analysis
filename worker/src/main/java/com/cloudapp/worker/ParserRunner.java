@@ -9,10 +9,12 @@ import edu.stanford.nlp.trees.*;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import org.slf4j.LoggerFactory;
 
 public class ParserRunner {
 
     private final StanfordParser parser;
+    private static final Logger logger = LoggerFactory.getLogger(ParserRunner.class);
 
     public ParserRunner() {
         this.parser = new StanfordParser();
@@ -24,7 +26,7 @@ public class ParserRunner {
     public File process(String url, String modeStr) throws Exception {
         int mode = parseMode(modeStr);
 
-        System.out.println("Processing: mode=" + modeStr + " | url=" + url);
+        logger.info("Processing: mode={} | url={}", modeStr, url);
 
         // Determine output file name
         String baseName = url.substring(url.lastIndexOf('/') + 1);
@@ -48,7 +50,7 @@ public class ParserRunner {
                 line = line.trim();
                 if (line.isEmpty()) continue;
 
-                System.out.println("RAW: [" + line + "]");
+                logger.info("RAW: [{}]", line);
 
                 Object result;
                 try {
@@ -73,7 +75,7 @@ public class ParserRunner {
             }
         }
 
-        System.out.println("Saved output to: " + outFile.getAbsolutePath());
+        logger.info("Saved output to: {}", outFile.getAbsolutePath());
         return outFile;
     }
 
