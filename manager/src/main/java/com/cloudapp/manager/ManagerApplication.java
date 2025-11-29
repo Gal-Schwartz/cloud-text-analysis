@@ -21,10 +21,13 @@ import software.amazon.awssdk.services.sqs.model.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ManagerApplication {
 
@@ -264,29 +267,8 @@ public class ManagerApplication {
             messagesCount, n, required);
 
     // 1. Find active workers
-    DescribeInstancesRequest describeReq = DescribeInstancesRequest.builder()
-            .filters(
-                    Filter.builder()
-                            .name("tag:" + ManagerConfig.WORKER_TAG_KEY_ROLE)
-                            .values(ManagerConfig.WORKER_TAG_VALUE_WORKER)
-                            .build(),
-                    Filter.builder()
-                            .name("instance-state-name")
-                            .values("pending", "running")
-                            .build()
-            )
-            .build();
-
-    DescribeInstancesResponse describeRes = ec2.describeInstances(describeReq);
-
-    List<String> activeWorkerIds = new ArrayList<>();
-    for (Reservation res : describeRes.reservations()) {
-        for (Instance inst : res.instances()) {
-            activeWorkerIds.add(inst.instanceId());
-        }
-    }
-
-    int active = activeWorkerIds.size();
+    List<String> activeWorkerIds = getWorkersId();
+    int active = activeWorkerIds.size(); //running EC2 workers 
     logger.info("Active workers: {}", active);
 
     // ---------- SCALE UP ----------
@@ -294,7 +276,7 @@ public class ManagerApplication {
 
     // Respect max total instance limit
     int maxTotal = 19;
-    int currentTotal = countAllInstances();
+    int currentTotal = countAllInstances(); //all running EC2
     int maxAdditional = Math.max(0, maxTotal - currentTotal);
     toLaunch = Math.min(toLaunch, maxAdditional);
 
@@ -367,7 +349,7 @@ public class ManagerApplication {
            "sudo su - ubuntu << 'EOF'\n" +
            "cd /home/ubuntu/app/worker\n" +
            "aws s3 cp s3://cloud-text-artifacts/worker.jar worker.jar\n" +
-           "nohup java -Xmx3000m -jar worker.jar > worker.log 2>&1 &\n" +
+           "nohup java -Xmx2200m -jar worker.jar > worker.log 2>&1 &\n" +
            "EOF\n";
     }
 
@@ -493,26 +475,7 @@ public class ManagerApplication {
     private void tryTerminateAllWorkersAndSelf() {
         logger.info("Terminating worker instances...");
 
-        DescribeInstancesRequest describeReq = DescribeInstancesRequest.builder()
-                .filters(
-                        Filter.builder()
-                                .name("tag:" + ManagerConfig.WORKER_TAG_KEY_ROLE)
-                                .values(ManagerConfig.WORKER_TAG_VALUE_WORKER)
-                                .build(),
-                        Filter.builder()
-                                .name("instance-state-name")
-                                .values("pending", "running")
-                                .build()
-                )
-                .build();
-
-        DescribeInstancesResponse describeRes = ec2.describeInstances(describeReq);
-        List<String> workerIds = new ArrayList<>();
-        for (Reservation r : describeRes.reservations()) {
-            for (Instance i : r.instances()) {
-                workerIds.add(i.instanceId());
-            }
-        }
+        List<String> workerIds = getWorkersId();
 
         if (!workerIds.isEmpty()) {
             TerminateInstancesRequest termReq = TerminateInstancesRequest.builder()
@@ -538,18 +501,55 @@ public class ManagerApplication {
         }
     }
 
-    private String fetchMyInstanceId() {
-        try {
-            java.net.URL url = new java.net.URL("http://169.254.169.254/latest/meta-data/instance-id");
-            try (java.io.BufferedReader r = new java.io.BufferedReader(
-                    new java.io.InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
-                return r.readLine();
+    private List<String> getWorkersId(){
+         DescribeInstancesRequest describeReq = DescribeInstancesRequest.builder()
+                .filters(
+                        Filter.builder()
+                                .name("tag:" + ManagerConfig.WORKER_TAG_KEY_ROLE)
+                                .values(ManagerConfig.WORKER_TAG_VALUE_WORKER)
+                                .build(),
+                        Filter.builder()
+                                .name("instance-state-name")
+                                .values("pending", "running")
+                                .build()
+                )
+                .build();
+
+        DescribeInstancesResponse describeRes = ec2.describeInstances(describeReq);
+        List<String> workerIds = new ArrayList<>();
+        for (Reservation r : describeRes.reservations()) {
+            for (Instance i : r.instances()) {
+                workerIds.add(i.instanceId());
             }
-        } catch (IOException e) {
+        }
+        return workerIds;
+    }
+
+    private String fetchMyInstanceId() {
+    try {
+            // Get token (IMDSv2)
+            URL tokenUrl = new URL("http://169.254.169.254/latest/api/token");
+            HttpURLConnection conn = (HttpURLConnection) tokenUrl.openConnection();
+            conn.setRequestMethod("PUT");
+            conn.setRequestProperty("X-aws-ec2-metadata-token-ttl-seconds", "21600");
+            conn.connect();
+
+            String token = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+            // Use token to get instance-id
+            URL metaUrl = new URL("http://169.254.169.254/latest/meta-data/instance-id");
+            HttpURLConnection metaConn = (HttpURLConnection) metaUrl.openConnection();
+            metaConn.setRequestProperty("X-aws-ec2-metadata-token", token);
+            metaConn.connect();
+
+            return new String(metaConn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+        } catch (Exception e) {
             logger.error("Failed to fetch manager instance-id from metadata", e);
             return null;
         }
     }
+
 
     // ==================== UTIL ====================
 

@@ -113,6 +113,13 @@ public class WorkerApplication {
             logger.info("Uploaded worker output to s3://{}/{}",
                     WorkerConfig.BUCKET_NAME, outputS3Key);
 
+            //delete the file from ec2 after uploading        
+            if (outputFile.delete()) {
+                logger.info("Deleted temp file " + outputFile.getName());
+            } else {
+                logger.warn("Failed to delete temp file " + outputFile.getAbsolutePath());
+            }
+
         } catch (Exception e) {
             logger.error("Error while processing worker taskId={}", task.getTaskId(), e);
             error = "Worker error: " + e.getMessage();
@@ -159,6 +166,7 @@ public class WorkerApplication {
                 .build();
 
         s3.putObject(putReq, RequestBody.fromFile(file));
+        
         return key;
     }
 

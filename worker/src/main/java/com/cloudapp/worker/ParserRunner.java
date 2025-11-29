@@ -1,93 +1,89 @@
 package com.cloudapp.worker;
 
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.parser.lexparser.LexicalizedParser;
+import edu.stanford.nlp.process.PTBTokenizer;
+import edu.stanford.nlp.process.CoreLabelTokenFactory;
+import edu.stanford.nlp.trees.*;
+
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ParserRunner {
 
     private final StanfordParser parser;
-    private static final Logger logger = LoggerFactory.getLogger(ParserRunner.class);
-
 
     public ParserRunner() {
         this.parser = new StanfordParser();
     }
 
+    /**
+     * Processes a URL line-by-line (streaming). Much lower memory usage.
+     */
     public File process(String url, String modeStr) throws Exception {
         int mode = parseMode(modeStr);
 
         System.out.println("Processing: mode=" + modeStr + " | url=" + url);
-        String text = download(url);
-        List<String> sentences = splitIntoSentences(text);
+
+        // Determine output file name
         String baseName = url.substring(url.lastIndexOf('/') + 1);
-        if (baseName.isEmpty()) {
-            baseName = "input.txt";
-        }
+        if (baseName.isEmpty()) baseName = "input.txt";
 
         String outputFileName = "output_" + modeStr + "_" + baseName;
         File outFile = new File(outputFileName);
 
-        try (PrintWriter out = new PrintWriter(outFile, StandardCharsets.UTF_8)) {
+        URL inputUrl = new URL(url);
+
+        try (BufferedReader reader = new BufferedReader(
+                     new InputStreamReader(inputUrl.openStream(), StandardCharsets.UTF_8));
+             PrintWriter out = new PrintWriter(
+                     new OutputStreamWriter(new FileOutputStream(outFile), StandardCharsets.UTF_8))) {
+
+            String line;
             int count = 1;
-            for (String sentence : sentences) {
-                logger.info("RAW SENTENCE = [" + sentence + "]");
-                if (sentence.trim().isEmpty()) continue;
 
-                Object result = parser.parse(sentence, mode);
-                logger.info("parsed sentence " + count);
+            while ((line = reader.readLine()) != null) {
 
-                out.println("===== Sentence " + count + " =====");
-                out.println("Text: " + sentence);
+                line = line.trim();
+                if (line.isEmpty()) continue;
 
-                if (mode == 2) {
-                    out.println(result.toString()); // Tree
-                } else {
-                    // POS or DEPENDENCY
-                    out.println(result);
+                System.out.println("RAW: [" + line + "]");
+
+                Object result;
+                try {
+                    result = parser.parse(line, mode);
+                } catch (Exception e) {
+                    // Record the error for this particular sentence
+                    out.println("===== Sentence " + count + " =====");
+                    out.println("Text: " + line);
+                    out.println("ERROR: " + e.getMessage());
+                    out.println();
+                    count++;
+                    continue;
                 }
 
+                // Write formatted result
+                out.println("===== Sentence " + count + " =====");
+                out.println("Text: " + line);
+                out.println(result.toString());
                 out.println();
+
                 count++;
             }
         }
 
-        logger.info("Saved output to: " + outFile.getAbsolutePath());
+        System.out.println("Saved output to: " + outFile.getAbsolutePath());
         return outFile;
     }
 
     private int parseMode(String modeStr) {
         switch (modeStr) {
-            case "POS":
-                return 1;
-            case "CONSTITUENCY":
-                return 2;
-            case "DEPENDENCY":
-                return 3;
+            case "POS":           return 1;
+            case "CONSTITUENCY":  return 2;
+            case "DEPENDENCY":    return 3;
             default:
                 throw new IllegalArgumentException("Unknown mode: " + modeStr);
         }
     }
-
-    private String download(String urlString) throws Exception {
-        URL url = new URL(urlString);
-        try (InputStream in = url.openStream()) {
-            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        }
-    }
-
-    private List<String> splitIntoSentences(String text) {
-        text = text.replace("\r", "");
-        String[] raw = text.split("\\n+");
-        List<String> out = new ArrayList<>();
-        for (String s : raw) {
-            s = s.trim();
-            if (!s.isEmpty()) out.add(s);
-        }
-        return out;
-    }
-
 }

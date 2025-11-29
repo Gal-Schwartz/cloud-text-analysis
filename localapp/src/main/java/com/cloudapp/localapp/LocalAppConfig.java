@@ -28,5 +28,5 @@ public class LocalAppConfig {
     public static final String MANAGER_TAG_VALUE_MANAGER = "Manager";
 
     // ---------- TIMEOUTS ----------
-    public static final long RESPONSE_WAIT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+    public static final long RESPONSE_WAIT_TIMEOUT_MS = 120 * 60 * 1000; 
 }
