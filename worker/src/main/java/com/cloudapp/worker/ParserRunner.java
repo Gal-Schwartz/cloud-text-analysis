@@ -9,6 +9,8 @@ import edu.stanford.nlp.trees.*;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ParserRunner {
