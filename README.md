@@ -276,12 +276,19 @@ Produces:
 * Create IAM roles.
 * Create Security Group ID and Key Pair.
 * Create AMI (same for Manager and Worker) → store its ID in LocalAppConfig.MANAGER_AMI_ID and ManagerConfig.WORKER_AMI_ID
+  
 Installed on AMI:
+
     Java SDK
+    
     AWS CLI
+    
     Ubunto
+    
 Manager instance t2.micro
+
 Worker instance t3.medium
+
 * Configure user‑data scripts and AMIs.
 * Upload artifacts.
 
