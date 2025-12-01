@@ -61,12 +61,10 @@ Message type: `TaskRequest`
 
 #### **2. Worker Task Queue** (Manager → Workers)
 
-Used by the Manager to distribute subtasks
-
-Every Worker pulls messages independently
-
-Enables parallel processing of URLs
-
+* Used by the Manager to distribute subtasks
+* Every Worker pulls messages independently
+* Enables parallel processing of URLs
+  
 Message type: `WorkerTaskMessage`
 
 #### **3. Worker Result Queue** (Workers → Manager)
@@ -75,15 +73,11 @@ Message type: `WorkerResultMessage`
 
 #### **4. Local Response Queue** (Manager → specific Local)
 
-Created dynamically per LocalApplication run.
-
-The Manager sends SummaryResponse only to this queue, ensuring:
-
-No cross-interference between different local clients
-
-No mixing responses of multiple tasks
-
-System remains scalable even with thousands of clients
+* Created dynamically per LocalApplication run.
+* The Manager sends SummaryResponse only to this queue, ensuring:
+ No cross-interference between different local clients
+ No mixing responses of multiple tasks
+* System remains scalable even with thousands of clients
 
 Message type: `SummaryResponse`
 
@@ -95,7 +89,7 @@ Message type: `SummaryResponse`
 
 Responsibilities:
 
-* Checks if a Manager EC2 instance exists. If not — launches it.
+* Checks if a Manager EC2 instance exists. If not - launches it.
 * Create a dedicated response queue.
 * Upload input file to S3.
 * Send new task (`TaskRequest`) to Manager Request Queue.
