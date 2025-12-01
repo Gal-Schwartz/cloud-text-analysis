@@ -75,8 +75,8 @@ Message type: `WorkerResultMessage`
 
 * Created dynamically per LocalApplication run.
 * The Manager sends SummaryResponse only to this queue, ensuring:
- No cross-interference between different local clients
- No mixing responses of multiple tasks
+ * No cross-interference between different local clients
+ * No mixing responses of multiple tasks
 * System remains scalable even with thousands of clients
 
 Message type: `SummaryResponse`
@@ -265,8 +265,8 @@ Produces:
 * `manager.jar`
 * `worker.jar`
 
-All jars are fat jars
-bootstraping `worker.jar` `manager.jar` via UserData scripts.
+* All jars are fat jars
+* bootstraping `worker.jar` `manager.jar` via UserData scripts.
 
 
 ### 9.2 AWS Setup
